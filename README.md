@@ -49,11 +49,11 @@ Em **Ajustes → Importar planilha**, selecione um `.xlsx`, `.xls` ou `.csv` com
 
 ## Google Drive (login e sincronização)
 
-O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O Client ID OAuth público vem sugerido na primeira configuração. Depois de confirmado, fica salvo apenas neste aparelho e o campo fica oculto; use **Alterar Client ID** para substituí-lo. Se os dados do navegador forem apagados, o app solicitará a configuração novamente. Client IDs são públicos; nunca coloque um Client Secret no app.
+O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O Client ID OAuth fica incorporado ao código em `js/drive.js`; não há configuração de Client ID para o usuário final. Para trocá-lo, altere a constante `GOOGLE_OAUTH_CLIENT_ID` no código e publique novamente o app. Client IDs são públicos; nunca coloque um Client Secret no app.
 
-### Configurar um Client ID próprio (opcional)
+### Configurar o projeto OAuth (desenvolvimento)
 
-O app sugere um Client ID OAuth público. Se precisar usar outro, siga os passos abaixo:
+O projeto Google usado pelo Client ID precisa autorizar as origens deste app. Para trocar o Client ID incorporado ao código, siga estes passos:
 
 1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `Bispo Telecom`).
 2. **APIs e serviços → Biblioteca** → ative **Google Drive API**.
@@ -67,10 +67,10 @@ O app sugere um Client ID OAuth público. Se precisar usar outro, siga os passos
    - **Origens JavaScript autorizadas**: a origem em que este app será publicado (sem caminho ou barra no final);
    - Criar.
 5. Copie o **Client ID** (termina em `.apps.googleusercontent.com`).
-6. No app: **Ajustes → Google Drive**, confira ou substitua o Client ID em **Configuração avançada** e toque em **Entrar com Google** para salvá-lo neste aparelho.
-7. Autorize o acesso e toque em **Sincronizar agora**.
+6. Altere `GOOGLE_OAUTH_CLIENT_ID` em `js/drive.js` e publique novamente o app.
+7. Em **Ajustes → Google Drive**, toque em **Entrar com Google** e autorize o acesso.
 
-> O Client ID fica armazenado somente neste aparelho. Se apagar os dados do navegador, será necessário confirmá-lo novamente. Client IDs não são segredos; nunca use um Client Secret no app. O cliente precisa autorizar a origem em que o app está aberto. Em desenvolvimento local, autorize `http://localhost:4173`.
+> Client IDs não são segredos; nunca use um Client Secret no app. O cliente precisa autorizar a origem em que o app está aberto. Em desenvolvimento local, autorize `http://localhost:4173`.
 > Enquanto o app estiver em modo **Testing** no Google Cloud, só os e-mails cadastrados como testadores conseguem entrar.
 
 ### Como a sincronização funciona

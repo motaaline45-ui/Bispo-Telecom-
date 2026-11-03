@@ -3,7 +3,7 @@
 
 const GIS_URL = 'https://accounts.google.com/gsi/client';
 export const DRIVE_FILE_NAME = 'bispo-telecom-backup.json';
-export const DEFAULT_DRIVE_CLIENT_ID = '497224513940-33vjsag19sf7g4pauk6881gkg0ujhtug.apps.googleusercontent.com';
+export const GOOGLE_OAUTH_CLIENT_ID = '497224513940-33vjsag19sf7g4pauk6881gkg0ujhtug.apps.googleusercontent.com';
 const DRIVE_SCOPE = [
   'https://www.googleapis.com/auth/drive.appdata',
   'openid',
@@ -13,16 +13,6 @@ const DRIVE_SCOPE = [
 
 export function isValidGoogleClientId(value) {
   return /^[\w-]+\.apps\.googleusercontent\.com$/.test(String(value || '').trim());
-}
-
-export function resolveDriveClientConfiguration(saved = {}) {
-  const savedClientId = String(saved?.clientId || '').trim();
-  const configured = saved?.clientIdConfigured === true
-    || (saved?.clientIdConfigured == null && isValidGoogleClientId(savedClientId));
-  return {
-    clientId: savedClientId || DEFAULT_DRIVE_CLIENT_ID,
-    clientIdConfigured: Boolean(configured && isValidGoogleClientId(savedClientId)),
-  };
 }
 
 let gisPromise = null;

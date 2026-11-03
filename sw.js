@@ -1,5 +1,5 @@
 /* Service worker — cache offline do app. */
-const CACHE = 'bispo-telecom-v4';
+const CACHE = 'bispo-telecom-v5';
 
 const ASSETS = [
   './',

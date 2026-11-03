@@ -269,7 +269,6 @@
           <button type="button" class="btn btn--ghost" id="btn-drive-sync" hidden>Sincronizar agora</button>
           <button type="button" class="btn btn--ghost" id="btn-drive-restore" hidden>Restaurar do Drive</button>
           <button type="button" class="btn btn--ghost" id="btn-drive-disconnect" hidden>Desconectar</button>
-          <button type="button" class="btn btn--ghost" id="btn-drive-edit-client" hidden>Alterar Client ID</button>
         </div>
 
         <label class="check" id="drive-auto-wrap" hidden>
@@ -277,33 +276,9 @@
           <span>Sincronizar automaticamente ao salvar (a cada alteração)</span>
         </label>
 
-        <details class="steps" id="drive-advanced">
-          <summary>Configuração avançada (Client ID)</summary>
-
-          <div class="field" id="drive-client-field">
-            <div class="field__top">
-              <label for="drive-client">Client ID do Google (OAuth)</label>
-              <button type="button" class="linkbtn" id="btn-drive-paste">Colar</button>
-            </div>
-            <input type="text" id="drive-client" aria-describedby="drive-client-help" spellcheck="false" autocomplete="off" placeholder="Cole aqui o Client ID (ex.: 123456-abc.apps.googleusercontent.com)">
-          </div>
-          <p class="hint" id="drive-client-help"></p>
-          <p class="hint">
-            Cadastre a origem deste app nas origens JavaScript autorizadas do seu cliente OAuth.
-          </p>
-
-          <details class="steps steps--nested">
-            <summary>Como criar o Client ID (passo a passo)</summary>
-            <ol>
-              <li>Crie um projeto no <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a>.</li>
-              <li>Ative a <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a>.</li>
-              <li>Configure a <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">tela de consentimento</a> como <strong>Externo</strong> e adicione seu e-mail em <strong>Usuários de teste</strong>.</li>
-              <li>Em <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciais</a>, crie <strong>ID do cliente OAuth → Aplicativo da Web</strong>.</li>
-              <li>Em <strong>Origens JavaScript autorizadas</strong>, adicione a origem onde este app será publicado (sem caminho ou barra no final).</li>
-              <li>Copie o Client ID (termina em <code>.apps.googleusercontent.com</code>) e cole no campo acima.</li>
-            </ol>
-          </details>
-        </details>
+        <p class="hint">
+          A conexão Google está configurada pelo app. Se não conseguir entrar, avise o suporte.
+        </p>
 
         <p class="hint">
           O backup fica na pasta privada do app no Google Drive. Só este app consegue acessá-lo —

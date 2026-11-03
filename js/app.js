@@ -13,9 +13,8 @@ import {
 } from './share.js';
 import { importSpreadsheet } from './import.js';
 import {
-  buildPayload, connect as googleConnect, DEFAULT_DRIVE_CLIENT_ID, downloadBackup, findBackupFile,
-  getUserInfo, isCloudNewer, isValidGoogleClientId, preloadGis, resolveDriveClientConfiguration,
-  revoke, uploadBackup,
+  buildPayload, connect as googleConnect, downloadBackup, findBackupFile, getUserInfo, isCloudNewer,
+  isValidGoogleClientId, preloadGis, revoke, uploadBackup, GOOGLE_OAUTH_CLIENT_ID,
 } from './drive.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -37,14 +36,13 @@ const state = {
   lastReport: null,
   deferredInstall: null,
   drive: {
-    clientId: '', linked: false, email: '', autoSync: false, lastSyncAt: null,
+    linked: false, email: '', autoSync: false, lastSyncAt: null,
   },
   meta: { updatedAt: null, lastSyncAt: null, fileId: null },
   driveToken: null,
   syncing: false,
   driveNotice: '',
   autoSyncTimer: null,
-  clientIdTimer: null,
 };
 
 const els = {};
@@ -58,8 +56,6 @@ function init() {
   state.records = loadRecords();
   state.settings = loadSettings();
   state.drive = loadDriveState();
-  els.driveAdvanced.open = !state.drive.clientIdConfigured;
-  updateDriveClientHelp();
   state.meta = loadMeta();
 
   if (state.records.length && !state.meta.updatedAt) {
@@ -77,7 +73,7 @@ function init() {
   registerServiceWorker();
   setupInstallPrompt();
 
-  if (state.drive.clientId) preloadGis();
+  preloadGis();
 }
 
 function cacheElements() {
@@ -134,12 +130,6 @@ function cacheElements() {
   els.installBtn = $('#btn-install');
   els.shareBackup = $('#btn-share-backup');
 
-  els.driveClient = $('#drive-client');
-  els.driveClientField = $('#drive-client-field');
-  els.driveAdvanced = $('#drive-advanced');
-  els.driveClientHelp = $('#drive-client-help');
-  els.drivePaste = $('#btn-drive-paste');
-  els.btnDriveEditClient = $('#btn-drive-edit-client');
   els.driveStatus = $('#drive-status');
   els.driveEmail = $('#drive-email');
   els.driveAuto = $('#drive-auto');
@@ -245,24 +235,6 @@ function bindEvents() {
       toast('Entre com o Google para ativar a sincronização automática.');
     }
   });
-  els.driveClient.addEventListener('input', () => {
-    setClientFieldError(false);
-    if (state.driveNotice) {
-      state.driveNotice = '';
-      renderDrive();
-    }
-    clearTimeout(state.clientIdTimer);
-    state.clientIdTimer = setTimeout(persistClientId, 400);
-  });
-  els.driveClient.addEventListener('change', persistClientId);
-  els.drivePaste.addEventListener('click', onPasteClientId);
-  els.btnDriveEditClient.addEventListener('click', () => {
-    els.driveAdvanced.open = true;
-    state.driveNotice = 'Confira ou substitua o Client ID salvo neste aparelho.';
-    renderDrive();
-    els.driveClient.focus();
-  });
-
   window.addEventListener('online', () => {
     toast('Conexão restabelecida.');
     if (state.drive.autoSync && state.drive.linked) scheduleAutoSync(500);
@@ -924,13 +896,14 @@ function renderStorageInfo() {
 /* ---------------- Google Drive ---------------- */
 
 function loadDriveState() {
-  const base = { clientId: DEFAULT_DRIVE_CLIENT_ID, clientIdConfigured: false, linked: false, email: '', autoSync: false, lastSyncAt: null };
+  const base = { linked: false, email: '', autoSync: false, lastSyncAt: null };
   try {
     const saved = JSON.parse(localStorage.getItem(DRIVE_KEY) || '{}');
+    delete saved.clientId;
+    delete saved.clientIdConfigured;
     return {
       ...base,
       ...saved,
-      ...resolveDriveClientConfiguration(saved),
     };
   } catch {
     return base;
@@ -938,7 +911,10 @@ function loadDriveState() {
 }
 
 function saveDriveState() {
-  localStorage.setItem(DRIVE_KEY, JSON.stringify(state.drive));
+  const persisted = { ...state.drive };
+  delete persisted.clientId;
+  delete persisted.clientIdConfigured;
+  localStorage.setItem(DRIVE_KEY, JSON.stringify(persisted));
 }
 
 function loadMeta() {
@@ -962,11 +938,6 @@ function touchData() {
 
 function renderDrive() {
   const d = state.drive;
-  if (document.activeElement !== els.driveClient) {
-    els.driveClient.value = d.clientId || '';
-  }
-  els.btnDriveEditClient.hidden = !d.clientIdConfigured;
-  updateDriveClientHelp();
 
   els.driveEmail.hidden = !d.linked;
   els.driveEmail.textContent = d.linked ? `Conectado como ${d.email || 'sua conta Google'}` : '';
@@ -996,72 +967,14 @@ function renderDrive() {
     .forEach((btn) => { btn.disabled = busy; });
 }
 
-function updateDriveClientHelp() {
-  if (!state.drive.clientIdConfigured && state.driveNotice) {
-    els.driveClientHelp.textContent = state.driveNotice;
-  } else if (state.drive.clientIdConfigured) {
-    els.driveClientHelp.textContent = 'Este Client ID fica salvo apenas neste aparelho. Se os dados do navegador forem apagados, o app pedirá a configuração novamente. Client IDs são públicos; não informe um Client Secret.';
-  } else if (isValidGoogleClientId(state.drive.clientId)) {
-    els.driveClientHelp.textContent = 'Confira o Client ID sugerido ou substitua-o. Toque em “Entrar com Google” para confirmar e salvar neste aparelho.';
-  } else {
-    els.driveClientHelp.textContent = 'Informe um Client ID válido do Google. Ele será salvo apenas neste aparelho; se os dados do navegador forem apagados, o app pedirá novamente.';
-  }
-}
-
 function setSyncing(value) {
   state.syncing = value;
   renderDrive();
 }
 
-function setClientFieldError(on) {
-  els.driveClientField.classList.toggle('field--error', Boolean(on));
-  if (on) els.driveClient.setAttribute('aria-invalid', 'true');
-  else els.driveClient.removeAttribute('aria-invalid');
-}
-
-function persistClientId() {
-  clearTimeout(state.clientIdTimer);
-  const value = (els.driveClient.value || '').trim();
-  if (value === state.drive.clientId) return;
-  state.drive.clientId = value;
-  state.drive.clientIdConfigured = false;
-  saveDriveState();
-  renderDrive();
-}
-
-async function onPasteClientId() {
-  try {
-    if (!navigator.clipboard?.readText) throw new Error('clipboard indisponível');
-    const text = (await navigator.clipboard.readText() || '').trim();
-    if (!text) {
-      toast('A área de transferência está vazia.');
-      return;
-    }
-    els.driveClient.value = text;
-    persistClientId();
-    const valid = isValidGoogleClientId(text);
-    setClientFieldError(!valid);
-    renderDrive();
-    toast(valid
-      ? 'Client ID colado. Agora toque em "Entrar com Google".'
-      : 'O texto colado não parece um Client ID (deve terminar em .apps.googleusercontent.com).', 4500);
-  } catch {
-    els.driveClient.focus();
-    toast('Não consegui ler a área de transferência. Mantenha pressionado o campo e escolha "Colar".', 5000);
-  }
-}
-
-async function ensureDriveToken({ clientId, force = false } = {}) {
-  const id = String(clientId ?? state.drive.clientId ?? '').trim();
-  if (!state.drive.clientIdConfigured || !isValidGoogleClientId(id)) {
-    const message = isValidGoogleClientId(id)
-      ? 'Confirme o Client ID na configuração avançada para usar o Google Drive.'
-      : 'Informe um Client ID válido para usar o Google Drive.';
-    requestDriveClientId(message, !isValidGoogleClientId(id));
-    const error = new Error(message);
-    error.code = 'CLIENT_ID';
-    throw error;
-  }
+async function ensureDriveToken({ force = false } = {}) {
+  const id = GOOGLE_OAUTH_CLIENT_ID;
+  if (!isValidGoogleClientId(id)) throw new Error('O Client ID do Google definido no app é inválido.');
 
   if (!force && state.driveToken && state.driveToken.expiresAt > Date.now() + 30000) {
     return state.driveToken;
@@ -1069,42 +982,20 @@ async function ensureDriveToken({ clientId, force = false } = {}) {
 
   const token = await googleConnect(id);
   state.driveToken = token;
-  state.drive.clientId = id;
-  state.drive.clientIdConfigured = true;
   saveDriveState();
   return token;
-}
-
-function requestDriveClientId(message, invalid = false) {
-  state.driveNotice = message;
-  els.driveAdvanced.open = true;
-  els.driveClientHelp.textContent = message;
-  setClientFieldError(invalid);
-  renderDrive();
-  els.driveClient.focus();
 }
 
 async function onDriveConnect() {
   if (state.syncing) return;
 
-  const typed = (els.driveClient.value || '').trim();
-  persistClientId();
-  if (!typed) {
-    requestDriveClientId('Informe seu Client ID do Google para conectar.');
-    toast(state.driveNotice, 5000);
-    return;
-  }
-  if (!isValidGoogleClientId(els.driveClient.value)) {
-    requestDriveClientId('O Client ID não parece válido — ele termina com .apps.googleusercontent.com.', true);
-    toast('Client ID inválido. Confira se copiou o valor completo.', 4500);
+  if (!isValidGoogleClientId(GOOGLE_OAUTH_CLIENT_ID)) {
+    toast('A configuração do Google está inválida. Atualize o Client ID no código do app.', 5000);
     return;
   }
 
   setSyncing(true);
   state.driveNotice = '';
-  setClientFieldError(false);
-  state.drive.clientIdConfigured = true;
-  saveDriveState();
   try {
     const token = await ensureDriveToken({ force: true });
     const info = await getUserInfo(token.accessToken);
@@ -1115,7 +1006,6 @@ async function onDriveConnect() {
       autoSync: state.drive.autoSync,
     };
     saveDriveState();
-    els.driveAdvanced.open = false;
     renderDrive();
     toast('Conectado ao Google Drive. Toque em "Sincronizar agora".');
   } catch (err) {
@@ -1288,9 +1178,7 @@ function handleDriveError(err) {
     state.driveNotice = 'Acesso negado. Adicione seu e-mail em “Usuários de teste” na tela de consentimento.';
     toast(state.driveNotice, 8000);
   } else if (/invalid_client|client_id|unknown client/i.test(message)) {
-    state.drive.clientIdConfigured = false;
-    saveDriveState();
-    requestDriveClientId('Client ID não reconhecido pelo Google. Confira ou substitua o valor.', true);
+    state.driveNotice = 'Não foi possível conectar ao Google. Avise o suporte do app para revisar a configuração.';
     toast(state.driveNotice, 7000);
   } else {
     toast(message);
