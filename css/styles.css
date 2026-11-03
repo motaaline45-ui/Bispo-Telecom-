@@ -84,7 +84,7 @@ h2 { font-size: 1.06rem; letter-spacing: -.01em; }
 }
 .app-header__inner {
   max-width: 920px; margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 12px;
   padding: 10px 16px;
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -92,6 +92,9 @@ h2 { font-size: 1.06rem; letter-spacing: -.01em; }
 .brand__text { display: flex; flex-direction: column; min-width: 0; }
 .brand__text strong { font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .brand__text span { font-size: .74rem; color: var(--muted); }
+.company-switcher { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.company-switcher select { width: auto; max-width: min(42vw, 220px); min-height: 36px; padding: 6px 9px; font-size: .82rem; }
+.company-switcher .btn { flex: none; width: 36px; padding: 4px; font-size: 1.15rem; line-height: 1; }
 
 /* ---------- Layout ---------- */
 .app-main { max-width: 920px; margin: 0 auto; padding: 16px; }

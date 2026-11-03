@@ -1,8 +1,9 @@
 import {
-  addDays, currency, currentMonthISO, DEFAULT_SETTINGS, endOfMonth, formatDateBR,
-  isValidRecord, lastMonthISO, loadRecords, loadSettings, makeRecord, numberBR, recordTotals,
-  saveRecords, saveSettings, startOfMonth, startOfWeek, todayISO, toNumber, weekdayShort,
-  weekInputValue, weekStartFromInput,
+  addDays, createCompany, currency, currentMonthISO, DEFAULT_SETTINGS, endOfMonth, formatDateBR,
+  isValidRecord, lastMonthISO, loadActiveCompanyId, loadAllCompanyData, loadCompanies, loadRecords,
+  loadSettings, makeRecord, numberBR, recordTotals, restoreCompanies, saveRecords, saveSettings,
+  setActiveCompanyId, startOfMonth, startOfWeek, todayISO, toNumber, weekdayShort, weekInputValue,
+  weekStartFromInput,
 } from './db.js';
 import {
   buildReport, emailSubject, reportFileName, reportToCSV, reportToText,
@@ -27,6 +28,8 @@ const AUTO_SYNC_DELAY = 5000;
 const DEFAULT_DRIVE_CLIENT_ID = '';
 
 const state = {
+  companies: [],
+  activeCompanyId: null,
   records: [],
   settings: { ...DEFAULT_SETTINGS },
   filterMonth: currentMonthISO(),
@@ -52,6 +55,8 @@ document.addEventListener('DOMContentLoaded', init);
 
 function init() {
   cacheElements();
+  state.companies = loadCompanies();
+  state.activeCompanyId = loadActiveCompanyId();
   state.records = loadRecords();
   state.settings = loadSettings();
   state.drive = loadDriveState();
@@ -102,6 +107,8 @@ function cacheElements() {
   els.kpiTotal = $('#kpi-total');
 
   els.brandName = $('#brand-name');
+  els.companySelect = $('#company-select');
+  els.addCompany = $('#btn-add-company');
   els.reportWeek = $('#report-week');
   els.reportMonth = $('#report-month');
   els.reportStart = $('#report-start');
@@ -177,6 +184,8 @@ function setReportDefaults() {
 function bindEvents() {
   $$('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goToTab(btn.dataset.tab)));
   $$('[data-goto]').forEach((btn) => btn.addEventListener('click', () => goToTab(btn.dataset.goto)));
+  els.companySelect.addEventListener('change', onCompanyChange);
+  els.addCompany.addEventListener('click', onAddCompany);
 
   els.form.addEventListener('submit', onSaveRecord);
   els.cancelEdit.addEventListener('click', (e) => { e.preventDefault(); setFormDefaults(); });
@@ -242,6 +251,76 @@ function bindEvents() {
 }
 
 /* ---------------- navegação ---------------- */
+
+function onCompanyChange() {
+  const companyId = els.companySelect.value;
+  if (companyId === state.activeCompanyId) return;
+  if (hasUnsavedCompanyChanges() && !window.confirm('Descartar as alterações não salvas antes de trocar de empresa?')) {
+    els.companySelect.value = state.activeCompanyId;
+    return;
+  }
+  activateCompany(companyId);
+}
+
+function onAddCompany() {
+  if (hasUnsavedCompanyChanges() && !window.confirm('Descartar as alterações não salvas antes de cadastrar outra empresa?')) {
+    return;
+  }
+  const name = window.prompt('Nome da nova empresa:');
+  if (name == null) return;
+  try {
+    const company = createCompany(name);
+    state.companies = loadCompanies();
+    activateCompany(company.id);
+    touchData();
+    toast(`Empresa "${company.name}" cadastrada.`);
+  } catch (err) {
+    toast(err.message || 'Não foi possível cadastrar a empresa.');
+  }
+}
+
+function hasUnsavedCompanyChanges() {
+  const hasRecordDraft = Boolean(
+    state.editingId || els.client.value.trim() || els.clientId.value.trim() || els.note.value.trim()
+    || els.date.value !== todayISO() || Number(els.installQty.value) !== 1
+    || Number(els.installUnit.value) !== state.settings.installUnit
+    || Number(els.cameraQty.value) !== 0
+    || Number(els.cameraUnit.value) !== state.settings.cameraUnit
+    || els.status.value !== 'ok',
+  );
+  const hasSettingsDraft = els.sCompany.value.trim() !== state.settings.company
+    || Number(els.sInstall.value) !== state.settings.installUnit
+    || Number(els.sCamera.value) !== state.settings.cameraUnit
+    || els.sFooter.value.trim() !== state.settings.footer;
+  return hasRecordDraft || hasSettingsDraft;
+}
+
+function activateCompany(companyId) {
+  setActiveCompanyId(companyId);
+  state.companies = loadCompanies();
+  state.activeCompanyId = loadActiveCompanyId();
+  state.records = loadRecords();
+  state.settings = loadSettings();
+  state.search = '';
+  els.search.value = '';
+  state.filterMonth = pickInitialMonth();
+  state.lastReport = null;
+  els.reportOutput.hidden = true;
+  els.reportActions.hidden = true;
+  fillSettingsForm();
+  setFormDefaults();
+  setReportDefaults();
+  renderAll();
+  toast(`Empresa ativa: ${state.settings.company}.`);
+}
+
+function renderCompanySwitcher() {
+  els.companySelect.innerHTML = state.companies.map((company) => (
+    `<option value="${esc(company.id)}">${esc(company.name)}</option>`
+  )).join('');
+  els.companySelect.value = state.activeCompanyId;
+  els.companySelect.setAttribute('aria-label', `Empresa ativa: ${state.settings.company}`);
+}
 
 function goToTab(tab) {
   $$('.tab-panel').forEach((panel) => { panel.hidden = panel.id !== `tab-${tab}`; });
@@ -618,7 +697,9 @@ function onSaveSettings(event) {
   };
   state.settings = settings;
   saveSettings(settings);
+  state.companies = loadCompanies();
   touchData();
+  renderCompanySwitcher();
   els.brandName.textContent = settings.company;
   if (!state.editingId) {
     els.installUnit.value = settings.installUnit;
@@ -648,7 +729,7 @@ async function onImportFile(event) {
 
     const merge = window.confirm(
       `Encontrados ${result.records.length} lançamento(s) em "${file.name}".\n\n`
-      + 'OK = adicionar aos existentes\nCancelar = substituir tudo pelos dados da planilha',
+      + 'OK = adicionar aos lançamentos desta empresa\nCancelar = substituir os lançamentos desta empresa pelos dados da planilha',
     );
 
     const base = merge ? state.records : [];
@@ -678,21 +759,13 @@ async function onImportFile(event) {
 }
 
 function onExportBackup() {
-  const payload = buildPayload({
-    records: state.records,
-    settings: state.settings,
-    updatedAt: state.meta.updatedAt,
-  });
+  const payload = buildCurrentBackup();
   downloadFile(`backup-bispo-telecom-${todayISO()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   toast('Backup gerado.');
 }
 
 async function onShareBackup() {
-  const payload = buildPayload({
-    records: state.records,
-    settings: state.settings,
-    updatedAt: state.meta.updatedAt,
-  });
+  const payload = buildCurrentBackup();
   const text = JSON.stringify(payload, null, 2);
   const filename = `backup-bispo-telecom-${todayISO()}.json`;
   const file = new File([text], filename, { type: 'application/json' });
@@ -721,6 +794,28 @@ async function onRestoreFile(event) {
 
   try {
     const data = JSON.parse(await file.text());
+    if (Array.isArray(data?.companies)) {
+      const count = data.companies.reduce(
+        (sum, company) => sum + (Array.isArray(company.records) ? company.records.length : 0),
+        0,
+      );
+      const ok = window.confirm(
+        `Restaurar ${data.companies.length} empresa(s) e ${count} lançamento(s)?\n`
+        + 'As empresas e os dados atuais deste aparelho serão substituídos.',
+      );
+      if (!ok) return;
+      const restored = restoreCompanies(data.companies, data.activeCompanyId);
+      state.companies = restored.companies;
+      state.activeCompanyId = restored.activeCompanyId;
+      state.records = loadRecords();
+      state.settings = loadSettings();
+      state.meta.updatedAt = data.updatedAt || new Date().toISOString();
+      saveMeta();
+      finishRestore();
+      toast('Backup das empresas restaurado.');
+      return;
+    }
+
     const records = Array.isArray(data) ? data : data.records;
     if (!Array.isArray(records)) throw new Error('Arquivo de backup inválido.');
 
@@ -746,8 +841,31 @@ async function onRestoreFile(event) {
   }
 }
 
+function buildCurrentBackup() {
+  return buildPayload({
+    records: state.records,
+    settings: state.settings,
+    companies: loadAllCompanyData(),
+    activeCompanyId: state.activeCompanyId,
+    updatedAt: state.meta.updatedAt,
+  });
+}
+
+function finishRestore() {
+  fillSettingsForm();
+  state.filterMonth = pickInitialMonth();
+  els.filterMonth.value = state.filterMonth;
+  state.lastReport = null;
+  els.reportOutput.hidden = true;
+  els.reportActions.hidden = true;
+  setFormDefaults();
+  renderAll();
+  setReportDefaults();
+}
+
 function onClearData() {
-  const ok = window.confirm('Apagar TODOS os lançamentos deste aparelho? Essa ação não pode ser desfeita.');
+  const companyName = state.settings.company || 'esta empresa';
+  const ok = window.confirm(`Apagar todos os lançamentos de ${companyName}? Essa ação não pode ser desfeita.`);
   if (!ok) return;
   state.records = [];
   persistRecords();
@@ -762,7 +880,7 @@ function onClearData() {
 function renderStorageInfo() {
   const records = state.records.length;
   const bytes = new Blob([JSON.stringify(state.records)]).size;
-  els.storageInfo.textContent = `${numberBR(records)} lançamento(s) salvos · ${(bytes / 1024).toFixed(1)} KB · armazenamento local do navegador.`;
+  els.storageInfo.textContent = `${numberBR(records)} lançamento(s) de ${state.settings.company} · ${(bytes / 1024).toFixed(1)} KB · armazenamento local do navegador.`;
 }
 
 /* ---------------- Google Drive ---------------- */
@@ -988,11 +1106,8 @@ async function syncNow({ auto = false } = {}) {
 }
 
 async function pushToDrive(token, file) {
-  const payload = buildPayload({
-    records: state.records,
-    settings: state.settings,
-    updatedAt: state.meta.updatedAt || new Date().toISOString(),
-  });
+  const payload = buildCurrentBackup();
+  payload.updatedAt = state.meta.updatedAt || new Date().toISOString();
 
   const saved = await uploadBackup(token.accessToken, file?.id || state.meta.fileId || null, payload);
   const now = new Date().toISOString();
@@ -1019,9 +1134,13 @@ async function onDriveRestore() {
     const cloud = await downloadBackup(token.accessToken, file.id);
     state.meta.fileId = file.id;
     saveMeta();
+    const companyCount = Array.isArray(cloud.companies) ? cloud.companies.length : 1;
+    const recordCount = Array.isArray(cloud.companies)
+      ? cloud.companies.reduce((sum, company) => sum + (Array.isArray(company.records) ? company.records.length : 0), 0)
+      : cloud.records.length;
     const ok = window.confirm(
-      `Restaurar ${cloud.records.length} lançamento(s) do Google Drive?\n`
-      + 'Os dados deste aparelho serão substituídos.',
+      `Restaurar ${companyCount} empresa(s) e ${recordCount} lançamento(s) do Google Drive?\n`
+      + 'Os dados atuais deste aparelho serão substituídos.',
     );
     if (!ok) return;
     applyCloud(cloud);
@@ -1033,16 +1152,23 @@ async function onDriveRestore() {
 }
 
 function applyCloud(cloud) {
-  state.records = cloud.records
-    .filter(isValidRecord)
-    .map((r) => makeRecord(r, state.settings));
+  if (Array.isArray(cloud.companies)) {
+    const restored = restoreCompanies(cloud.companies, cloud.activeCompanyId);
+    state.companies = restored.companies;
+    state.activeCompanyId = restored.activeCompanyId;
+    state.records = loadRecords();
+    state.settings = loadSettings();
+  } else {
+    state.records = cloud.records
+      .filter(isValidRecord)
+      .map((r) => makeRecord(r, state.settings));
+    saveRecords(state.records);
 
-  saveRecords(state.records);
-
-  if (cloud.settings && typeof cloud.settings === 'object') {
-    state.settings = { ...state.settings, ...cloud.settings };
-    saveSettings(state.settings);
-    fillSettingsForm();
+    if (cloud.settings && typeof cloud.settings === 'object') {
+      state.settings = { ...state.settings, ...cloud.settings };
+      saveSettings(state.settings);
+      state.companies = loadCompanies();
+    }
   }
 
   state.meta.updatedAt = cloud.updatedAt || new Date().toISOString();
@@ -1053,10 +1179,7 @@ function applyCloud(cloud) {
   state.drive.lastSyncAt = state.meta.lastSyncAt;
   saveDriveState();
 
-  state.filterMonth = pickInitialMonth();
-  els.filterMonth.value = state.filterMonth;
-  renderAll();
-  setReportDefaults();
+  finishRestore();
   toast(`Dados restaurados do Google Drive (${numberBR(state.records.length)} lançamentos).`);
 }
 
@@ -1116,6 +1239,7 @@ function handleAutoSyncError(err) {
 
 function renderAll() {
   els.brandName.textContent = state.settings.company || DEFAULT_SETTINGS.company;
+  renderCompanySwitcher();
   renderKpis();
   renderRecords();
   renderStorageInfo();

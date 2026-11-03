@@ -8,6 +8,7 @@ Código-base: [relatorio-instalacoes](https://github.com/bigfatalbear/relatorio-
 
 ## Funcionalidades
 
+- **Várias empresas**: cadastre empresas, alterne pelo seletor no cabeçalho e edite o nome e os ajustes de cada uma separadamente.
 - **Lançamentos**: data, ID e nome do cliente, quantidade e valor de instalações e câmeras, status e observação.
 - **Editar / apagar** qualquer lançamento, com filtro por mês e busca por nome/ID.
 - **Relatório semanal** (segunda a domingo, semana ISO).
@@ -20,13 +21,13 @@ Código-base: [relatorio-instalacoes](https://github.com/bigfatalbear/relatorio-
   - Compartilhamento nativo do Android (Web Share API);
   - Copiar texto, baixar **CSV** e **imprimir/salvar PDF**.
 - **Importar planilha** `.xlsx`, `.xls` ou `.csv` (detecta cabeçalhos e datas).
-- **Backup** em JSON, restauração e **compartilhamento do arquivo** (Drive, WhatsApp, e-mail…).
+- **Backup** em JSON, restauração e **compartilhamento do arquivo** (Drive, WhatsApp, e-mail…); os backups incluem todas as empresas.
 - **Login com Google** e **sincronização automática** com o Google Drive (pasta privada do app).
 - **PWA**: funciona offline, instala na tela inicial, abre em tela cheia.
 
 ## Privacidade
 
-Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`). A sincronização com o Google Drive é opcional e só acontece depois que o usuário configura suas credenciais e conecta a conta. O repositório não contém dados de clientes.
+Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`), separados por empresa neste aparelho. A sincronização com o Google Drive é opcional e só acontece depois que o usuário configura suas credenciais e conecta a conta. Os backups manuais e do Drive incluem todas as empresas. A seleção de empresas não cria contas nem controla o acesso de outros usuários; os dados não são compartilhados entre aparelhos sem restaurar um backup. O repositório não contém dados de clientes.
 
 > ⚠️ Se limpar os dados do navegador, os lançamentos são apagados. Use **Ajustes → Baixar backup** periodicamente.
 
@@ -34,9 +35,10 @@ Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`)
 
 1. Abra o endereço onde o app foi publicado no Chrome do celular.
 2. Toque em **Instalar app** (ou menu ⋮ → *Adicionar à tela inicial*).
-3. Vá em **Ajustes**, confira os valores padrão e importe a planilha (opcional).
-4. Cadastre lançamentos em **Lançamentos**.
-5. Em **Relatórios**, escolha o tipo, gere e compartilhe.
+3. Use o seletor no cabeçalho para alternar entre empresas ou toque em **+** para cadastrar uma.
+4. Em **Ajustes**, confira os valores padrão da empresa ativa e importe a planilha (opcional).
+5. Cadastre lançamentos em **Lançamentos**.
+6. Em **Relatórios**, escolha o tipo, gere e compartilhe.
 
 ### Importar a planilha
 
@@ -97,6 +99,7 @@ O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive 
 ```bash
 npm start          # http://localhost:4173
 npm run check      # valida sintaxe dos módulos
+npm test           # testa migração, isolamento e restauração de empresas
 ```
 
 Ou:

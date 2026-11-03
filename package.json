@@ -6,6 +6,7 @@
   "description": "Bispo Telecom — PWA de controle de instalações e câmeras com relatórios semanais, mensais e sob demanda.",
   "scripts": {
     "start": "npx --yes serve . -l 4173",
-    "check": "node --check js/app.js && node --check js/db.js && node --check js/reports.js && node --check js/share.js && node --check js/import.js && node --check js/drive.js"
+    "check": "node --check js/app.js && node --check js/db.js && node --check js/reports.js && node --check js/share.js && node --check js/import.js && node --check js/drive.js",
+    "test": "node --test"
   }
 }

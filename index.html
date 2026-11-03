@@ -27,6 +27,11 @@
           <span>Controle de instalações e câmeras</span>
         </div>
       </div>
+      <div class="company-switcher">
+        <label class="sr-only" for="company-select">Empresa ativa</label>
+        <select id="company-select" aria-label="Empresa ativa"></select>
+        <button id="btn-add-company" class="btn btn--ghost btn--sm" type="button" aria-label="Cadastrar empresa" title="Cadastrar empresa">+</button>
+      </div>
       <button id="btn-install" class="btn btn--ghost btn--sm" type="button" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Instalar app
@@ -201,11 +206,11 @@
       <form id="settings-form" class="card">
         <div class="card__head">
           <h2>Ajustes</h2>
-          <span class="hint">Valores padrão usados em novos lançamentos e no cabeçalho dos relatórios.</span>
+          <span class="hint">Nome, valores padrão e rodapé são salvos separadamente para cada empresa.</span>
         </div>
         <div class="form-grid">
           <div class="field field--wide">
-            <label for="s-company">Nome da empresa / responsável</label>
+            <label for="s-company">Nome da empresa</label>
             <input type="text" id="s-company" maxlength="80" placeholder="Ex.: Minha Empresa">
           </div>
           <div class="field">
@@ -306,7 +311,7 @@
           <label class="btn btn--ghost btn--file" for="restore-file">Restaurar backup</label>
           <input type="file" id="restore-file" accept=".json,application/json" hidden>
 
-          <button type="button" class="btn btn--danger" id="btn-clear">Apagar todos os dados</button>
+          <button type="button" class="btn btn--danger" id="btn-clear">Apagar lançamentos da empresa ativa</button>
         </div>
         <p class="hint" id="storage-info"></p>
       </div>

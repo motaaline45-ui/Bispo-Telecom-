@@ -196,13 +196,14 @@ export async function uploadBackup(accessToken, fileId, payload) {
 
 /* ---------------- payload ---------------- */
 
-export function buildPayload({ records, settings, updatedAt }) {
+export function buildPayload({ records, settings, companies, activeCompanyId, updatedAt }) {
   return {
     app: 'bispo-telecom',
-    version: 1,
+    version: Array.isArray(companies) ? 2 : 1,
     updatedAt: updatedAt || new Date().toISOString(),
     settings,
     records,
+    ...(Array.isArray(companies) ? { companies, activeCompanyId } : {}),
   };
 }
 

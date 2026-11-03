@@ -3,6 +3,8 @@
 export const KEYS = {
   records: 'bispo-telecom.records.v1',
   settings: 'bispo-telecom.settings.v1',
+  companies: 'bispo-telecom.companies.v1',
+  activeCompanyId: 'bispo-telecom.active-company.v1',
 };
 
 export const DEFAULT_SETTINGS = {
@@ -14,7 +16,15 @@ export const DEFAULT_SETTINGS = {
 
 /* ---------------- dados ---------------- */
 
-export function loadRecords() {
+function companyRecordsKey(companyId) {
+  return `bispo-telecom.company.${companyId}.records.v1`;
+}
+
+function companySettingsKey(companyId) {
+  return `bispo-telecom.company.${companyId}.settings.v1`;
+}
+
+function readLegacyRecords() {
   try {
     const raw = localStorage.getItem(KEYS.records);
     if (!raw) return [];
@@ -26,16 +36,11 @@ export function loadRecords() {
   }
 }
 
-export function saveRecords(records) {
-  localStorage.setItem(KEYS.records, JSON.stringify(records));
-}
-
-export function loadSettings() {
+function readLegacySettings() {
   try {
     const raw = localStorage.getItem(KEYS.settings);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const settings = normalizeSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
-    // migra o nome antigo (versões anteriores do app) para a marca atual
     if (settings.company === 'Relatório de Instalações') settings.company = DEFAULT_SETTINGS.company;
     return settings;
   } catch {
@@ -43,8 +48,172 @@ export function loadSettings() {
   }
 }
 
+function normalizeCompany(company) {
+  if (!company || typeof company.id !== 'string' || !/^[\w-]{1,100}$/.test(company.id)) return null;
+  return {
+    id: company.id,
+    name: String(company.name || DEFAULT_SETTINGS.company).trim().slice(0, 80) || DEFAULT_SETTINGS.company,
+  };
+}
+
+function readCompanyRecords(companyId) {
+  try {
+    const data = JSON.parse(localStorage.getItem(companyRecordsKey(companyId)) || '[]');
+    return Array.isArray(data) ? data.filter(isValidRecord) : [];
+  } catch (err) {
+    console.warn('Falha ao ler lançamentos:', err);
+    return [];
+  }
+}
+
+function readCompanySettings(companyId, companyName) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(companySettingsKey(companyId)) || '{}');
+    return normalizeSettings({ ...DEFAULT_SETTINGS, ...saved, company: companyName || saved.company });
+  } catch {
+    return normalizeSettings({ ...DEFAULT_SETTINGS, company: companyName });
+  }
+}
+
+function saveCompanyList(companies) {
+  localStorage.setItem(KEYS.companies, JSON.stringify(companies));
+}
+
+export function loadCompanies() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEYS.companies) || 'null');
+    if (Array.isArray(saved)) {
+      const companies = [];
+      const seen = new Set();
+      for (const entry of saved) {
+        const company = normalizeCompany(entry);
+        if (company && !seen.has(company.id)) {
+          seen.add(company.id);
+          companies.push(company);
+        }
+      }
+      if (companies.length) {
+        if (companies.length !== saved.length) saveCompanyList(companies);
+        const activeId = localStorage.getItem(KEYS.activeCompanyId);
+        if (!companies.some((company) => company.id === activeId)) {
+          localStorage.setItem(KEYS.activeCompanyId, companies[0].id);
+        }
+        return companies;
+      }
+    }
+  } catch (err) {
+    console.warn('Falha ao ler empresas:', err);
+  }
+
+  const settings = readLegacySettings();
+  const company = { id: `c-${uid()}`, name: settings.company };
+  const records = readLegacyRecords().map((record) => makeRecord(record, settings));
+  localStorage.setItem(companyRecordsKey(company.id), JSON.stringify(records));
+  localStorage.setItem(companySettingsKey(company.id), JSON.stringify(settings));
+  localStorage.setItem(KEYS.activeCompanyId, company.id);
+  saveCompanyList([company]);
+  return [company];
+}
+
+export function loadActiveCompanyId() {
+  const companies = loadCompanies();
+  const activeId = localStorage.getItem(KEYS.activeCompanyId);
+  return companies.some((company) => company.id === activeId) ? activeId : companies[0].id;
+}
+
+export function setActiveCompanyId(companyId) {
+  const companies = loadCompanies();
+  if (!companies.some((company) => company.id === companyId)) {
+    throw new Error('Empresa selecionada não encontrada.');
+  }
+  localStorage.setItem(KEYS.activeCompanyId, companyId);
+  return companyId;
+}
+
+export function createCompany(name) {
+  const companyName = String(name || '').trim().slice(0, 80);
+  if (!companyName) throw new Error('Informe o nome da empresa.');
+  const companies = loadCompanies();
+  const company = { id: `c-${uid()}`, name: companyName };
+  const settings = normalizeSettings({ ...DEFAULT_SETTINGS, company: companyName });
+  localStorage.setItem(companyRecordsKey(company.id), '[]');
+  localStorage.setItem(companySettingsKey(company.id), JSON.stringify(settings));
+  saveCompanyList([...companies, company]);
+  setActiveCompanyId(company.id);
+  return company;
+}
+
+export function loadAllCompanyData() {
+  return loadCompanies().map((company) => ({
+    ...company,
+    settings: readCompanySettings(company.id, company.name),
+    records: readCompanyRecords(company.id),
+  }));
+}
+
+export function restoreCompanies(companyData, activeCompanyId) {
+  if (!Array.isArray(companyData)) throw new Error('Backup de empresas inválido.');
+  const previous = loadCompanies();
+  const companies = [];
+  const seen = new Set();
+  const dataById = new Map();
+  for (const entry of companyData) {
+    const company = normalizeCompany(entry);
+    if (!company || seen.has(company.id) || !Array.isArray(entry.records)) {
+      throw new Error('O backup contém uma empresa inválida.');
+    }
+    seen.add(company.id);
+    const settings = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...(entry.settings && typeof entry.settings === 'object' ? entry.settings : {}),
+      company: company.name,
+    });
+    const records = entry.records.filter(isValidRecord).map((record) => makeRecord(record, settings));
+    companies.push(company);
+    dataById.set(company.id, { settings, records });
+  }
+  if (!companies.length) throw new Error('O backup não contém empresas válidas.');
+
+  for (const company of companies) {
+    const data = dataById.get(company.id);
+    localStorage.setItem(companyRecordsKey(company.id), JSON.stringify(data.records));
+    localStorage.setItem(companySettingsKey(company.id), JSON.stringify(data.settings));
+  }
+  for (const company of previous) {
+    if (!seen.has(company.id)) {
+      localStorage.removeItem(companyRecordsKey(company.id));
+      localStorage.removeItem(companySettingsKey(company.id));
+    }
+  }
+  saveCompanyList(companies);
+  const selectedId = companies.some((company) => company.id === activeCompanyId)
+    ? activeCompanyId
+    : companies[0].id;
+  localStorage.setItem(KEYS.activeCompanyId, selectedId);
+  return { companies, activeCompanyId: selectedId };
+}
+
+export function loadRecords() {
+  return readCompanyRecords(loadActiveCompanyId());
+}
+
+export function saveRecords(records) {
+  localStorage.setItem(companyRecordsKey(loadActiveCompanyId()), JSON.stringify(records));
+}
+
+export function loadSettings() {
+  const company = loadCompanies().find((entry) => entry.id === loadActiveCompanyId());
+  return readCompanySettings(company.id, company.name);
+}
+
 export function saveSettings(settings) {
-  localStorage.setItem(KEYS.settings, JSON.stringify(normalizeSettings(settings)));
+  const normalized = normalizeSettings(settings);
+  const activeId = loadActiveCompanyId();
+  localStorage.setItem(companySettingsKey(activeId), JSON.stringify(normalized));
+  const companies = loadCompanies().map((company) => (
+    company.id === activeId ? { ...company, name: normalized.company } : company
+  ));
+  saveCompanyList(companies);
 }
 
 function normalizeSettings(s) {
