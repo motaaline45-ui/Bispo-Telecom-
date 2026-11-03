@@ -261,10 +261,6 @@
           <span class="hint" id="drive-status">Nenhuma conta conectada.</span>
         </div>
 
-        <p class="hint">
-          Um Client ID OAuth público já vem preenchido abaixo; substitua-o nas configurações avançadas se necessário.
-        </p>
-
         <div class="data-actions">
           <button type="button" class="btn btn--primary" id="btn-drive-connect">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -273,6 +269,7 @@
           <button type="button" class="btn btn--ghost" id="btn-drive-sync" hidden>Sincronizar agora</button>
           <button type="button" class="btn btn--ghost" id="btn-drive-restore" hidden>Restaurar do Drive</button>
           <button type="button" class="btn btn--ghost" id="btn-drive-disconnect" hidden>Desconectar</button>
+          <button type="button" class="btn btn--ghost" id="btn-drive-edit-client" hidden>Alterar Client ID</button>
         </div>
 
         <label class="check" id="drive-auto-wrap" hidden>
@@ -288,8 +285,9 @@
               <label for="drive-client">Client ID do Google (OAuth)</label>
               <button type="button" class="linkbtn" id="btn-drive-paste">Colar</button>
             </div>
-            <input type="text" id="drive-client" spellcheck="false" autocomplete="off" placeholder="Cole aqui o Client ID (ex.: 123456-abc.apps.googleusercontent.com)">
+            <input type="text" id="drive-client" aria-describedby="drive-client-help" spellcheck="false" autocomplete="off" placeholder="Cole aqui o Client ID (ex.: 123456-abc.apps.googleusercontent.com)">
           </div>
+          <p class="hint" id="drive-client-help"></p>
           <p class="hint">
             Cadastre a origem deste app nas origens JavaScript autorizadas do seu cliente OAuth.
           </p>

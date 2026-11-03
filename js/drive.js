@@ -15,6 +15,16 @@ export function isValidGoogleClientId(value) {
   return /^[\w-]+\.apps\.googleusercontent\.com$/.test(String(value || '').trim());
 }
 
+export function resolveDriveClientConfiguration(saved = {}) {
+  const savedClientId = String(saved?.clientId || '').trim();
+  const configured = saved?.clientIdConfigured === true
+    || (saved?.clientIdConfigured == null && isValidGoogleClientId(savedClientId));
+  return {
+    clientId: savedClientId || DEFAULT_DRIVE_CLIENT_ID,
+    clientIdConfigured: Boolean(configured && isValidGoogleClientId(savedClientId)),
+  };
+}
+
 let gisPromise = null;
 let tokenClient = null;
 

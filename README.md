@@ -49,11 +49,11 @@ Em **Ajustes → Importar planilha**, selecione um `.xlsx`, `.xls` ou `.csv` com
 
 ## Google Drive (login e sincronização)
 
-O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O Client ID OAuth público já vem preenchido por padrão e pode ser substituído em **Configuração avançada**; nunca coloque um Client Secret no app.
+O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O Client ID OAuth público vem sugerido na primeira configuração. Depois de confirmado, fica salvo apenas neste aparelho e o campo fica oculto; use **Alterar Client ID** para substituí-lo. Se os dados do navegador forem apagados, o app solicitará a configuração novamente. Client IDs são públicos; nunca coloque um Client Secret no app.
 
 ### Configurar um Client ID próprio (opcional)
 
-O app já inclui um Client ID OAuth público para facilitar a conexão. Se preferir usar outro, siga os passos abaixo:
+O app sugere um Client ID OAuth público. Se precisar usar outro, siga os passos abaixo:
 
 1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `Bispo Telecom`).
 2. **APIs e serviços → Biblioteca** → ative **Google Drive API**.
@@ -67,10 +67,10 @@ O app já inclui um Client ID OAuth público para facilitar a conexão. Se prefe
    - **Origens JavaScript autorizadas**: a origem em que este app será publicado (sem caminho ou barra no final);
    - Criar.
 5. Copie o **Client ID** (termina em `.apps.googleusercontent.com`).
-6. No app: **Ajustes → Google Drive**, confira o Client ID já preenchido (ou substitua-o, se necessário) e toque em **Entrar com Google**.
+6. No app: **Ajustes → Google Drive**, confira ou substitua o Client ID em **Configuração avançada** e toque em **Entrar com Google** para salvá-lo neste aparelho.
 7. Autorize o acesso e toque em **Sincronizar agora**.
 
-> O app já vem com um Client ID OAuth público preenchido, que pode ser substituído em **Configuração avançada**. Client IDs não são segredos; nunca use um Client Secret no app. O cliente precisa autorizar a origem em que o app está aberto. Em desenvolvimento local, autorize `http://localhost:4173`.
+> O Client ID fica armazenado somente neste aparelho. Se apagar os dados do navegador, será necessário confirmá-lo novamente. Client IDs não são segredos; nunca use um Client Secret no app. O cliente precisa autorizar a origem em que o app está aberto. Em desenvolvimento local, autorize `http://localhost:4173`.
 > Enquanto o app estiver em modo **Testing** no Google Cloud, só os e-mails cadastrados como testadores conseguem entrar.
 
 ### Como a sincronização funciona
