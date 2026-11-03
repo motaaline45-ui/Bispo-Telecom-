@@ -27,7 +27,7 @@ Código-base: [relatorio-instalacoes](https://github.com/bigfatalbear/relatorio-
 
 ## Privacidade
 
-Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`), separados por empresa neste aparelho. A sincronização com o Google Drive é opcional e só acontece depois que o usuário configura suas credenciais e conecta a conta. Os backups manuais e do Drive incluem todas as empresas. A seleção de empresas não cria contas nem controla o acesso de outros usuários; os dados não são compartilhados entre aparelhos sem restaurar um backup. O repositório não contém dados de clientes.
+Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`), separados por empresa neste aparelho. A sincronização com o Google Drive é opcional e só acontece depois que o usuário conecta a conta. Os backups manuais e do Drive incluem todas as empresas. A seleção de empresas não cria contas nem controla o acesso de outros usuários; os dados não são compartilhados entre aparelhos sem restaurar um backup. O repositório não contém dados de clientes.
 
 > ⚠️ Se limpar os dados do navegador, os lançamentos são apagados. Use **Ajustes → Baixar backup** periodicamente.
 
@@ -49,9 +49,11 @@ Em **Ajustes → Importar planilha**, selecione um `.xlsx`, `.xls` ou `.csv` com
 
 ## Google Drive (login e sincronização)
 
-O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). Para habilitar, configure seu próprio Client ID OAuth; ele é público, mas deve autorizar apenas as origens confiáveis. Nunca coloque um Client Secret no app.
+O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O Client ID OAuth público já vem preenchido por padrão e pode ser substituído em **Configuração avançada**; nunca coloque um Client Secret no app.
 
-### Configurar um Client ID
+### Configurar um Client ID próprio (opcional)
+
+O app já inclui um Client ID OAuth público para facilitar a conexão. Se preferir usar outro, siga os passos abaixo:
 
 1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `Bispo Telecom`).
 2. **APIs e serviços → Biblioteca** → ative **Google Drive API**.
@@ -65,10 +67,10 @@ O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive 
    - **Origens JavaScript autorizadas**: a origem em que este app será publicado (sem caminho ou barra no final);
    - Criar.
 5. Copie o **Client ID** (termina em `.apps.googleusercontent.com`).
-6. No app: **Ajustes → Google Drive**, cole o Client ID e toque em **Entrar com Google**.
+6. No app: **Ajustes → Google Drive**, confira o Client ID já preenchido (ou substitua-o, se necessário) e toque em **Entrar com Google**.
 7. Autorize o acesso e toque em **Sincronizar agora**.
 
-> O Client ID é público (não é segredo). Não é necessário Client Secret nem URL de redirecionamento. Em desenvolvimento local, autorize `http://localhost:4173`.
+> O app já vem com um Client ID OAuth público preenchido, que pode ser substituído em **Configuração avançada**. Client IDs não são segredos; nunca use um Client Secret no app. O cliente precisa autorizar a origem em que o app está aberto. Em desenvolvimento local, autorize `http://localhost:4173`.
 > Enquanto o app estiver em modo **Testing** no Google Cloud, só os e-mails cadastrados como testadores conseguem entrar.
 
 ### Como a sincronização funciona
@@ -90,7 +92,6 @@ O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive 
 
 ### Limitações
 
-- O app não inclui um Client ID padrão; o Google Drive só funciona depois da configuração de um cliente OAuth próprio.
 - Para distribuir o app para muitas pessoas fora dos testadores, o Google pode exigir verificação do OAuth.
 - A exclusão do backup no Drive não apaga os dados locais (e vice-versa).
 

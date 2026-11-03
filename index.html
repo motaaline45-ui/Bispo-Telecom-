@@ -39,6 +39,25 @@
     </div>
   </header>
 
+  <dialog id="add-company-dialog" class="company-dialog" aria-labelledby="add-company-title">
+    <form id="add-company-form">
+      <div class="card__head">
+        <h2 id="add-company-title">Cadastrar empresa</h2>
+        <p class="hint">Informe o nome que aparecerá no seletor.</p>
+      </div>
+      <div class="field">
+        <label for="new-company-name">Nome da empresa</label>
+        <input id="new-company-name" name="companyName" type="text" maxlength="80"
+          autocomplete="organization" required autofocus>
+        <p id="company-name-error" class="company-dialog__error" role="alert" hidden></p>
+      </div>
+      <div class="company-dialog__actions">
+        <button id="btn-cancel-add-company" class="btn btn--ghost" type="button">Cancelar</button>
+        <button class="btn btn--primary" type="submit">Cadastrar</button>
+      </div>
+    </form>
+  </dialog>
+
   <main id="conteudo" class="app-main">
     <!-- ================= LANÇAMENTOS ================= -->
     <section id="tab-lancamentos" class="tab-panel" role="tabpanel" aria-label="Lançamentos">
@@ -243,7 +262,7 @@
         </div>
 
         <p class="hint">
-          Para sincronizar no Google Drive, configure seu próprio Client ID OAuth abaixo.
+          Um Client ID OAuth público já vem preenchido abaixo; substitua-o nas configurações avançadas se necessário.
         </p>
 
         <div class="data-actions">

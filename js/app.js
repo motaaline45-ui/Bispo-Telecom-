@@ -13,8 +13,8 @@ import {
 } from './share.js';
 import { importSpreadsheet } from './import.js';
 import {
-  buildPayload, connect as googleConnect, downloadBackup, findBackupFile, getUserInfo,
-  isCloudNewer, preloadGis, revoke, uploadBackup,
+  buildPayload, connect as googleConnect, DEFAULT_DRIVE_CLIENT_ID, downloadBackup, findBackupFile,
+  getUserInfo, isCloudNewer, isValidGoogleClientId, preloadGis, revoke, uploadBackup,
 } from './drive.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -23,9 +23,6 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const DRIVE_KEY = 'bispo-telecom.drive.v1';
 const META_KEY = 'bispo-telecom.meta.v1';
 const AUTO_SYNC_DELAY = 5000;
-// Client ID público por design (não é segredo). A proteção vem da origem autorizada
-// no Google Cloud; o Client Secret nunca é usado em apps estáticos.
-const DEFAULT_DRIVE_CLIENT_ID = '';
 
 const state = {
   companies: [],
@@ -109,6 +106,11 @@ function cacheElements() {
   els.brandName = $('#brand-name');
   els.companySelect = $('#company-select');
   els.addCompany = $('#btn-add-company');
+  els.addCompanyDialog = $('#add-company-dialog');
+  els.addCompanyForm = $('#add-company-form');
+  els.newCompanyName = $('#new-company-name');
+  els.companyNameError = $('#company-name-error');
+  els.cancelAddCompany = $('#btn-cancel-add-company');
   els.reportWeek = $('#report-week');
   els.reportMonth = $('#report-month');
   els.reportStart = $('#report-start');
@@ -186,6 +188,12 @@ function bindEvents() {
   $$('[data-goto]').forEach((btn) => btn.addEventListener('click', () => goToTab(btn.dataset.goto)));
   els.companySelect.addEventListener('change', onCompanyChange);
   els.addCompany.addEventListener('click', onAddCompany);
+  els.addCompanyForm.addEventListener('submit', onCreateCompany);
+  els.cancelAddCompany.addEventListener('click', () => els.addCompanyDialog.close());
+  els.newCompanyName.addEventListener('input', () => {
+    els.companyNameError.hidden = true;
+    els.companyNameError.textContent = '';
+  });
 
   els.form.addEventListener('submit', onSaveRecord);
   els.cancelEdit.addEventListener('click', (e) => { e.preventDefault(); setFormDefaults(); });
@@ -266,16 +274,34 @@ function onAddCompany() {
   if (hasUnsavedCompanyChanges() && !window.confirm('Descartar as alterações não salvas antes de cadastrar outra empresa?')) {
     return;
   }
-  const name = window.prompt('Nome da nova empresa:');
-  if (name == null) return;
+  els.addCompanyForm.reset();
+  els.companyNameError.hidden = true;
+  els.companyNameError.textContent = '';
+  els.addCompanyDialog.showModal();
+  els.newCompanyName.focus({ preventScroll: true });
+}
+
+function onCreateCompany(event) {
+  event.preventDefault();
+  const name = els.newCompanyName.value.trim();
+  if (!name) {
+    els.companyNameError.textContent = 'Informe o nome da empresa.';
+    els.companyNameError.hidden = false;
+    els.newCompanyName.focus();
+    return;
+  }
+
   try {
     const company = createCompany(name);
     state.companies = loadCompanies();
+    els.addCompanyDialog.close();
     activateCompany(company.id);
     touchData();
     toast(`Empresa "${company.name}" cadastrada.`);
   } catch (err) {
-    toast(err.message || 'Não foi possível cadastrar a empresa.');
+    els.companyNameError.textContent = err.message || 'Não foi possível cadastrar a empresa.';
+    els.companyNameError.hidden = false;
+    els.newCompanyName.focus();
   }
 }
 
@@ -985,7 +1011,7 @@ async function onPasteClientId() {
     }
     els.driveClient.value = text;
     persistClientId();
-    const valid = /^[\w-]+\.apps\.googleusercontent\.com$/.test(text);
+    const valid = isValidGoogleClientId(text);
     setClientFieldError(!valid);
     renderDrive();
     toast(valid
@@ -1004,7 +1030,7 @@ async function ensureDriveToken({ clientId, force = false } = {}) {
 
   const id = (clientId || els.driveClient.value || state.drive.clientId || DEFAULT_DRIVE_CLIENT_ID).trim();
   if (!id) throw new Error('Informe o Client ID do Google em Ajustes.');
-  if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(id)) {
+  if (!isValidGoogleClientId(id)) {
     throw new Error('Client ID inválido. Ele termina com ".apps.googleusercontent.com".');
   }
 
@@ -1027,7 +1053,7 @@ async function onDriveConnect() {
     toast(state.driveNotice, 5000);
     return;
   }
-  if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(els.driveClient.value.trim())) {
+  if (!isValidGoogleClientId(els.driveClient.value)) {
     state.driveNotice = 'O Client ID não parece válido — ele termina com .apps.googleusercontent.com.';
     setClientFieldError(true);
     els.driveClient.focus();
