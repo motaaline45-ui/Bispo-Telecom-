@@ -1,10 +1,10 @@
-# I.S.P Telecom (PWA)
+# Bispo Telecom
 
-**App online:** https://bigfatalbear.github.io/relatorio-instalacoes/
+PWA instalável para registrar serviços de telecomunicações, acompanhar instalações e câmeras, gerar relatórios semanais, mensais ou personalizados e compartilhar resultados.
 
-App instalável da **I.S.P Telecom** para registrar instalações de internet e câmeras, gerar **relatórios semanais, mensais e sob demanda** e compartilhar por **WhatsApp**, **e-mail**, texto ou CSV.
+O app usa como referência operacional a planilha `produções.xlsx`. Os dados da planilha não são incluídos neste repositório.
 
-Baseado na planilha `rolatorio.xlsx`: colunas DATA, SEMANA, ID, CLIENTES, INSTALAÇÃO (R$ 120), CÂMERA (R$ 50), QTD.INSTALAÇÃO e QTD.CÂMERA.
+Código-base: [relatorio-instalacoes](https://github.com/bigfatalbear/relatorio-instalacoes).
 
 ## Funcionalidades
 
@@ -26,13 +26,13 @@ Baseado na planilha `rolatorio.xlsx`: colunas DATA, SEMANA, ID, CLIENTES, INSTAL
 
 ## Privacidade
 
-Os dados ficam **somente no armazenamento local do navegador** do aparelho (`localStorage`). Nada é enviado para servidor algum. O repositório não contém dados de clientes — apenas o app.
+Por padrão, os dados ficam no armazenamento local do navegador (`localStorage`). A sincronização com o Google Drive é opcional e só acontece depois que o usuário configura suas credenciais e conecta a conta. O repositório não contém dados de clientes.
 
 > ⚠️ Se limpar os dados do navegador, os lançamentos são apagados. Use **Ajustes → Baixar backup** periodicamente.
 
 ## Como usar
 
-1. Abra o link do GitHub Pages no Chrome do celular.
+1. Abra o endereço onde o app foi publicado no Chrome do celular.
 2. Toque em **Instalar app** (ou menu ⋮ → *Adicionar à tela inicial*).
 3. Vá em **Ajustes**, confira os valores padrão e importe a planilha (opcional).
 4. Cadastre lançamentos em **Lançamentos**.
@@ -40,22 +40,18 @@ Os dados ficam **somente no armazenamento local do navegador** do aparelho (`loc
 
 ### Importar a planilha
 
-Em **Ajustes → Importar planilha**, selecione o `.xlsx`. O app lê todas as abas, ignora linhas de total e entende datas do Excel. Se já houver lançamentos, escolha:
+Em **Ajustes → Importar planilha**, selecione um `.xlsx`, `.xls` ou `.csv` com cabeçalhos reconhecidos pelo app (por exemplo, DATA, CLIENTE, ID, quantidades e valores). Revise os lançamentos após a importação, pois planilhas de produção podem ter colunas e serviços que não correspondem diretamente aos campos de instalações e câmeras. Se já houver lançamentos, escolha:
 
 - **OK** → adiciona aos existentes (duplicados são ignorados);
 - **Cancelar** → substitui tudo pelos dados da planilha.
 
 ## Google Drive (login e sincronização)
 
-O app entra com a **sua** conta Google e guarda um `relatorio-instalacoes-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). O arquivo **não aparece** na lista normal do Drive e nenhum outro app consegue lê-lo.
+O app pode guardar `bispo-telecom-backup.json` na pasta privada do app no Drive (escopo `drive.appdata`). Para habilitar, configure seu próprio Client ID OAuth; ele é público, mas deve autorizar apenas as origens confiáveis. Nunca coloque um Client Secret no app.
 
-> **Já vem configurado:** o app inclui um Client ID padrão, então o botão *Entrar com Google* funciona direto. Os passos abaixo são só se você quiser usar um projeto próprio (ou se precisar corrigir a origem autorizada).
->
-> O Client ID fica visível no código do site — **isso é normal e não é uma falha**. Ele é um identificador público; o que protege o app é a lista de **origens JavaScript autorizadas**. O **Client Secret** jamais deve ser colocado no app.
+### Configurar um Client ID
 
-### Usar seu próprio Client ID (opcional)
-
-1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `Relatorio Instalacoes`).
+1. Abra <https://console.cloud.google.com> e crie um projeto (ex.: `Bispo Telecom`).
 2. **APIs e serviços → Biblioteca** → ative **Google Drive API**.
 3. **APIs e serviços → Tela de consentimento OAuth**:
    - Tipo: **Externo**;
@@ -64,14 +60,13 @@ O app entra com a **sua** conta Google e guarda um `relatorio-instalacoes-backup
    - Salve.
 4. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**:
    - Tipo: **Aplicativo da Web**;
-   - **Origens JavaScript autorizadas**: `https://bigfatalbear.github.io`
-     (sem caminho, sem barra no final);
+   - **Origens JavaScript autorizadas**: a origem em que este app será publicado (sem caminho ou barra no final);
    - Criar.
 5. Copie o **Client ID** (termina em `.apps.googleusercontent.com`).
 6. No app: **Ajustes → Google Drive**, cole o Client ID e toque em **Entrar com Google**.
 7. Autorize o acesso e toque em **Sincronizar agora**.
 
-> O Client ID é público (não é segredo). Não é necessário Client Secret nem URL de redirecionamento.
+> O Client ID é público (não é segredo). Não é necessário Client Secret nem URL de redirecionamento. Em desenvolvimento local, autorize `http://localhost:4173`.
 > Enquanto o app estiver em modo **Testing** no Google Cloud, só os e-mails cadastrados como testadores conseguem entrar.
 
 ### Como a sincronização funciona
@@ -86,14 +81,14 @@ O app entra com a **sua** conta Google e guarda um `relatorio-instalacoes-backup
 
 | Erro | Causa / correção |
 |---|---|
-| `redirect_uri_mismatch` ou “registre a origem JavaScript no Console do Google Cloud” | Em **Credenciais → seu cliente OAuth**, adicione em **Origens JavaScript autorizadas** exatamente `https://bigfatalbear.github.io` (sem barra e sem caminho) e salve. Pode levar alguns minutos para valer. |
+| `redirect_uri_mismatch` ou “registre a origem JavaScript no Console do Google Cloud” | Em **Credenciais → seu cliente OAuth**, adicione a origem exata em que o app está aberto (sem caminho e sem barra) e salve. Pode levar alguns minutos para valer. |
 | `access_denied` / “Acesso bloqueado” | Adicione seu e-mail em **Usuários de teste** na tela de consentimento. |
 | “Google Drive API has not been used in project…” | Ative a **Google Drive API** no projeto selecionado. |
 | A janela do Google não abre no app instalado | Abra o link pelo **Chrome** e faça o login uma vez. |
 
 ### Limitações
 
-- O Client ID padrão é público (como qualquer Client ID de site) e só funciona a partir da origem autorizada `https://bigfatalbear.github.io`.
+- O app não inclui um Client ID padrão; o Google Drive só funciona depois da configuração de um cliente OAuth próprio.
 - Para distribuir o app para muitas pessoas fora dos testadores, o Google pode exigir verificação do OAuth.
 - A exclusão do backup no Drive não apaga os dados locais (e vice-versa).
 
@@ -115,14 +110,14 @@ Não abra o `index.html` direto como arquivo (`file://`): módulos ES e service 
 ## Publicação no GitHub Pages
 
 ```bash
-gh repo create relatorio-instalacoes --public --source=. --push
-gh api -X POST repos/{owner}/relatorio-instalacoes/pages \
+gh repo create bispo-telecom --private --source=. --push
+gh api -X POST repos/{owner}/bispo-telecom/pages \
   -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'
 ```
 
-URL: `https://{owner}.github.io/relatorio-instalacoes/`
+URL: `https://{owner}.github.io/bispo-telecom/`
 
-> Ao alterar arquivos, incremente `CACHE` no topo de `sw.js` (ex.: `ri-v2`) para forçar a atualização nos aparelhos que já instalaram o app.
+> Ao alterar arquivos, incremente `CACHE` no topo de `sw.js` para forçar a atualização nos aparelhos que já instalaram o app.
 
 ## Estrutura
 

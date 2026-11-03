@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>I.S.P Telecom</title>
-  <meta name="description" content="I.S.P Telecom — controle de instalações e câmeras com relatórios semanais, mensais e sob demanda. Compartilhe por WhatsApp ou e-mail.">
-  <meta name="theme-color" content="#1d4ed8">
+  <title>Bispo Telecom</title>
+  <meta name="description" content="Bispo Telecom — controle de instalações e câmeras com relatórios semanais, mensais e sob demanda. Compartilhe por WhatsApp ou e-mail.">
+  <meta name="theme-color" content="#0b5b4e">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="I.S.P Telecom">
+  <meta name="apple-mobile-web-app-title" content="Bispo Telecom">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -23,7 +23,7 @@
       <div class="brand">
         <img class="brand__logo" src="./icons/icon-192.png" alt="" width="40" height="40">
         <div class="brand__text">
-          <strong id="brand-name">I.S.P Telecom</strong>
+          <strong id="brand-name">Bispo Telecom</strong>
           <span>Controle de instalações e câmeras</span>
         </div>
       </div>
@@ -238,7 +238,7 @@
         </div>
 
         <p class="hint">
-          O Client ID <strong>já vem configurado</strong> — basta tocar em “Entrar com Google”.
+          Para sincronizar no Google Drive, configure seu próprio Client ID OAuth abaixo.
         </p>
 
         <div class="data-actions">
@@ -267,8 +267,7 @@
             <input type="text" id="drive-client" spellcheck="false" autocomplete="off" placeholder="Cole aqui o Client ID (ex.: 123456-abc.apps.googleusercontent.com)">
           </div>
           <p class="hint">
-            Troque apenas se quiser usar outro projeto do Google. A origem autorizada precisa ser
-            exatamente <code>https://bigfatalbear.github.io</code>.
+            Cadastre a origem deste app nas origens JavaScript autorizadas do seu cliente OAuth.
           </p>
 
           <details class="steps steps--nested">
@@ -278,7 +277,7 @@
               <li>Ative a <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a>.</li>
               <li>Configure a <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">tela de consentimento</a> como <strong>Externo</strong> e adicione seu e-mail em <strong>Usuários de teste</strong>.</li>
               <li>Em <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credenciais</a>, crie <strong>ID do cliente OAuth → Aplicativo da Web</strong>.</li>
-              <li>Em <strong>Origens JavaScript autorizadas</strong>, adicione <code>https://bigfatalbear.github.io</code> (sem barra no final).</li>
+              <li>Em <strong>Origens JavaScript autorizadas</strong>, adicione a origem onde este app será publicado (sem caminho ou barra no final).</li>
               <li>Copie o Client ID (termina em <code>.apps.googleusercontent.com</code>) e cole no campo acima.</li>
             </ol>
           </details>
@@ -320,7 +319,7 @@
           Compartilhamento por WhatsApp, e-mail, texto copiado ou arquivo CSV.
           Backup manual em JSON ou sincronização automática com o Google Drive.
         </p>
-        <p class="hint">Versão 1.2.1</p>
+        <p class="hint">Versão 1.0.0</p>
       </div>
     </section>
   </main>

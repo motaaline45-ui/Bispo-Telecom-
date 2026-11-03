@@ -19,12 +19,12 @@ import {
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-const DRIVE_KEY = 'ri.drive.v1';
-const META_KEY = 'ri.meta.v1';
+const DRIVE_KEY = 'bispo-telecom.drive.v1';
+const META_KEY = 'bispo-telecom.meta.v1';
 const AUTO_SYNC_DELAY = 5000;
 // Client ID público por design (não é segredo). A proteção vem da origem autorizada
 // no Google Cloud; o Client Secret nunca é usado em apps estáticos.
-const DEFAULT_DRIVE_CLIENT_ID = '619731682538-8vk1i4h68fm2uhmsbmjn38l3hgc2isbc.apps.googleusercontent.com';
+const DEFAULT_DRIVE_CLIENT_ID = '';
 
 const state = {
   records: [],
@@ -525,7 +525,7 @@ function renderReport(report) {
 
   els.reportOutput.innerHTML = `
     <div class="report__head">
-      <span class="report__company">${esc(report.settings.company || 'I.S.P Telecom')}</span>
+      <span class="report__company">${esc(report.settings.company || 'Bispo Telecom')}</span>
       <h2 class="report__title">${esc(report.typeLabel)}</h2>
       <span class="report__period">${report.periodText}</span>
     </div>
@@ -683,7 +683,7 @@ function onExportBackup() {
     settings: state.settings,
     updatedAt: state.meta.updatedAt,
   });
-  downloadFile(`backup-isp-telecom-${todayISO()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+  downloadFile(`backup-bispo-telecom-${todayISO()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   toast('Backup gerado.');
 }
 
@@ -694,14 +694,14 @@ async function onShareBackup() {
     updatedAt: state.meta.updatedAt,
   });
   const text = JSON.stringify(payload, null, 2);
-  const filename = `backup-isp-telecom-${todayISO()}.json`;
+  const filename = `backup-bispo-telecom-${todayISO()}.json`;
   const file = new File([text], filename, { type: 'application/json' });
 
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({
         files: [file],
-        title: 'Backup — I.S.P Telecom',
+        title: 'Backup — Bispo Telecom',
         text: 'Backup dos dados do app.',
       });
       return;
@@ -902,9 +902,12 @@ async function onDriveConnect() {
 
   const typed = (els.driveClient.value || '').trim();
   if (!typed) {
-    els.driveClient.value = DEFAULT_DRIVE_CLIENT_ID;
-    persistClientId();
+    state.driveNotice = 'Configure seu Client ID do Google na seção de configuração avançada.';
+    $('#drive-advanced').open = true;
+    els.driveClient.focus();
     renderDrive();
+    toast(state.driveNotice, 5000);
+    return;
   }
   if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(els.driveClient.value.trim())) {
     state.driveNotice = 'O Client ID não parece válido — ele termina com .apps.googleusercontent.com.';
@@ -1088,7 +1091,7 @@ function handleDriveError(err) {
   if (/popup_closed|cancelad/i.test(message)) {
     toast('Login cancelado.');
   } else if (/redirect_uri_mismatch|origin|origem/i.test(message)) {
-    state.driveNotice = 'Origem não autorizada: adicione https://bigfatalbear.github.io nas “Origens JavaScript autorizadas” do cliente OAuth.';
+    state.driveNotice = `Origem não autorizada: adicione ${window.location.origin} nas origens JavaScript autorizadas do cliente OAuth.`;
     toast(state.driveNotice, 9000);
   } else if (/access_denied|acesso negado|bloqueado/i.test(message)) {
     state.driveNotice = 'Acesso negado. Adicione seu e-mail em “Usuários de teste” na tela de consentimento.';

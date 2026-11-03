@@ -2,7 +2,7 @@
 // Escopo drive.appdata: o arquivo fica na pasta privada do app, invisível para outros apps.
 
 const GIS_URL = 'https://accounts.google.com/gsi/client';
-export const DRIVE_FILE_NAME = 'relatorio-instalacoes-backup.json';
+export const DRIVE_FILE_NAME = 'bispo-telecom-backup.json';
 const DRIVE_SCOPE = [
   'https://www.googleapis.com/auth/drive.appdata',
   'openid',
@@ -198,7 +198,7 @@ export async function uploadBackup(accessToken, fileId, payload) {
 
 export function buildPayload({ records, settings, updatedAt }) {
   return {
-    app: 'relatorio-instalacoes',
+    app: 'bispo-telecom',
     version: 1,
     updatedAt: updatedAt || new Date().toISOString(),
     settings,

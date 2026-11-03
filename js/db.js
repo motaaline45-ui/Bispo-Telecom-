@@ -1,12 +1,12 @@
 // Armazenamento local e utilitários de data/valor.
 
 export const KEYS = {
-  records: 'ri.records.v1',
-  settings: 'ri.settings.v1',
+  records: 'bispo-telecom.records.v1',
+  settings: 'bispo-telecom.settings.v1',
 };
 
 export const DEFAULT_SETTINGS = {
-  company: 'I.S.P Telecom',
+  company: 'Bispo Telecom',
   installUnit: 120,
   cameraUnit: 50,
   footer: '',
